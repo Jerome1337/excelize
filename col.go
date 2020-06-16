@@ -67,7 +67,6 @@ func (cols *Cols) Rows() ([]string, error) {
 	var (
 		err          error
 		// inElement    string
-		cellCol int
 		rows      []string
 	)
 
@@ -75,44 +74,14 @@ func (cols *Cols) Rows() ([]string, error) {
 		return rows, err
 	}
 
-	d := cols.f.sharedStringsReader()
-	for {
-		log.Println("LOOP", cols.err)
-		token, _ := cols.decoder.Token()
-		if token == nil {
-			log.Println("BREAK ")
-			break
-		}
+	for i := 1; i <= cols.totalRow; i++ {
+		colName, _ := ColumnNumberToName(cols.curCol)
+		val, _ := cols.f.GetCellValue(cols.sheet, fmt.Sprintf("%s%d", colName, i))
+		log.Println("err getting value", err)
+		log.Println("valuuuuuue", val)
+		rows = append(rows, val)
 
-		switch startElement := token.(type) {
-		case xml.StartElement:
-			if startElement.Name.Local == "c" {
-				colCell := xlsxC{}
-				_ = cols.decoder.DecodeElement(&colCell, &startElement)
-
-				log.Println("colcell", colCell)
-				log.Println("current col", cols.curCol)
-				colName, _ := ColumnNumberToName(cols.curCol)
-				for i := 1; i <= cols.totalRow; i++ {
-					if colCell.R == fmt.Sprintf("%s%d", colName, i) {
-						cellCol, _, err = CellNameToCoordinates(colCell.R)
-						if err != nil {
-							return rows, err
-						}
-						blank := cellCol - len(rows)
-						for i := 1; i < blank; i++ {
-							rows = append(rows, "")
-						}
-						val, _ := colCell.getValueFrom(cols.f, d)
-						log.Println("err getting value", err)
-						log.Println("valuuuuuue", val)
-						rows = append(rows, val)
-
-						break;
-					}
-				}
-			}
-		}
+		break;
 	}
 
 	log.Println("NEXT COL")
@@ -132,9 +101,10 @@ type Cols struct {
 
 // Cols deded
 func (f *File) Cols(sheet string) (*Cols, error) {
-	log.Println(trimSheetName(sheet))
-	log.Println("sheets", f.sheetMap[trimSheetName(sheet)])
-	name, ok := f.sheetMap[trimSheetName(sheet)]
+	log.Println()
+	name := trimSheetName(sheet)
+	log.Println("sheets", f.sheetMap[name])
+	_, ok := f.sheetMap[name]
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
