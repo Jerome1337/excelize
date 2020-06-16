@@ -77,10 +77,13 @@ func (cols *Cols) Rows() ([]string, error) {
 
 	d := cols.f.sharedStringsReader()
 	for {
+		log.Println("LOOP")
 		token, _ := cols.decoder.Token()
 		if token == nil {
+			log.Println("BREAK ")
 			break
 		}
+
 		switch startElement := token.(type) {
 		case xml.StartElement:
 			if startElement.Name.Local == "c" {
@@ -105,7 +108,7 @@ func (cols *Cols) Rows() ([]string, error) {
 						log.Println("valuuuuuue", val)
 						rows = append(rows, val)
 
-						break;
+						break
 					}
 				}
 			}
