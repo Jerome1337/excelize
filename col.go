@@ -15,7 +15,6 @@ import (
 	"errors"
 	"log"
 	"math"
-	"strconv"
 	"strings"
 
 	"github.com/mohae/deepcopy"
@@ -53,7 +52,7 @@ func (f *File) GetCols(sheet string) ([][]string, error) {
 // Cols defines an iterator to a sheet
 type Cols struct {
 	err                        error
-	curCol, totalCol, stashCol int
+	curCol, totalCol, stashCol, totalRow int
 	sheet                      string
 	cols                       []xlsxCols
 	f                          *File
@@ -61,7 +60,7 @@ type Cols struct {
 }
 
 // Cols deded
-func (f *File) Cols(sheet string) (*Rows, error) {
+func (f *File) Cols(sheet string) (*Cols, error) {
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
@@ -72,10 +71,10 @@ func (f *File) Cols(sheet string) (*Rows, error) {
 		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
 	}
 	var (
-		err       error
 		inElement string
-		col       int
-		cols      Rows
+		cols      Cols
+		colsNum  []int
+		rowsNum []int
 	)
 	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	for {
@@ -87,18 +86,23 @@ func (f *File) Cols(sheet string) (*Rows, error) {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
 			if inElement == "dimension" {
+				colsNum = make([]int, 0)
+				rowsNum = make([]int, 0)
+
 				for _, attr := range startElement.Attr {
-					log.Println("attr", attr)
-					log.Println("name", attr.Name)
-					log.Println("local", attr.Name.Local)
-					if attr.Name.Local == "c" {
-						col, err = strconv.Atoi(attr.Value)
-						if err != nil {
-							return &cols, err
+					if attr.Name.Local == "ref" {
+						coordinates := strings.Split(attr.Value, ":")
+						for _, coordinate := range coordinates {
+							c, r, _ := SplitCellName(coordinate)
+							columnNum, _ := ColumnNameToNumber(c)
+
+							colsNum = append(colsNum, columnNum)
+							rowsNum = append(rowsNum, r)
 						}
 					}
 				}
-				cols.totalRow = col
+				cols.totalCol = colsNum[1] - (colsNum[0] - 1)
+				cols.totalRow = rowsNum[1] - (rowsNum[0] - 1)
 			}
 		default:
 		}
