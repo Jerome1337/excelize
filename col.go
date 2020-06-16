@@ -74,15 +74,37 @@ func (cols *Cols) Rows() ([]string, error) {
 		return rows, err
 	}
 
-	for i := 1; i <= cols.totalRow; i++ {
-		colName, _ := ColumnNumberToName(cols.curCol)
-		log.Println("coord", fmt.Sprintf("%s%d", colName, i))
-		value, err := cols.f.GetCellValue(cols.sheet, fmt.Sprintf("%s%d", colName, i))
+	d := rows.f.sharedStringsReader()
+	for {
+		token, _ := rows.decoder.Token()
+		if token == nil {
+			break
+		}
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			if inElement == "c" {
+				colCell := xlsxC{}
+				_ = rows.decoder.DecodeElement(&colCell, &startElement)
 
-		log.Println("err getting value", err)
-		log.Println("valuuuuuue", value)
+				for i := 1; i <= cols.totalRow; i++ {
+					colName, _ := ColumnNumberToName(cols.curCol)
 
-		rows = append(rows, value)
+					if colCell == fmt.Sprintf("%s%d", colName, i) {
+						cellCol, _, err = CellNameToCoordinates(colCell.R)
+						if err != nil {
+							return rows, err
+						}
+						blank := cellCol - len(rows)
+						for i := 1; i < blank; i++ {
+							rows = append(rows, "")
+						}
+						val, _ := colCell.getValueFrom(rows.f, d)
+						log.Println("err getting value", err)
+						log.Println("valuuuuuue", val)
+						rows = append(rows, val)
+					}
+				}
+			}
 	}
 
 	log.Println("NEXT COL")
@@ -102,7 +124,6 @@ type Cols struct {
 
 // Cols deded
 func (f *File) Cols(sheet string) (*Cols, error) {
-	log.Println("file", f)
 	log.Println(trimSheetName(sheet))
 	log.Println("sheets", f.sheetMap[trimSheetName(sheet)])
 	name, ok := f.sheetMap[trimSheetName(sheet)]
