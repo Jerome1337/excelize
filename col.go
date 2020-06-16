@@ -53,6 +53,7 @@ func (f *File) GetCols(sheet string) ([][]string, error) {
 // Next will return true if find the next col element.
 func (cols *Cols) Next() bool {
 	cols.curCol++
+	log.Println("next", cols.curCol)
 	return cols.curCol <= cols.totalCol
 }
 
@@ -87,6 +88,7 @@ func (cols *Cols) Rows() ([]string, error) {
 				_ = cols.decoder.DecodeElement(&colCell, &startElement)
 
 				log.Println("colcell", colCell)
+				log.Println("current col", cols.curCol)
 				colName, _ := ColumnNumberToName(cols.curCol)
 				for i := 1; i <= cols.totalRow; i++ {
 					if colCell.R == fmt.Sprintf("%s%d", colName, i) {
@@ -102,6 +104,8 @@ func (cols *Cols) Rows() ([]string, error) {
 						log.Println("err getting value", err)
 						log.Println("valuuuuuue", val)
 						rows = append(rows, val)
+
+						break;
 					}
 				}
 			}
