@@ -102,6 +102,9 @@ type Cols struct {
 
 // Cols deded
 func (f *File) Cols(sheet string) (*Cols, error) {
+	log.Println("file", f)
+	log.Println(trimSheetName(sheet))
+	log.Println("sheets", f.sheetMap[trimSheetName(sheet)])
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
