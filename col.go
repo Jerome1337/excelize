@@ -86,8 +86,8 @@ func (f *File) Cols(sheet string) (*Rows, error) {
 		switch startElement := token.(type) {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
-			if inElement == "col" {
-				// log.Println("col", inElement)
+			if inElement == "cols" {
+				log.Println("cols", inElement)
 				for _, attr := range startElement.Attr {
 					log.Println("attr", attr)
 					log.Println("name", attr.Name)
