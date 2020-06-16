@@ -32,6 +32,7 @@ const (
 func (f *File) GetCols(sheet string) ([][]string, error) {
 	cols, err := f.Cols(sheet)
 	if err != nil {
+		log.Println("fck error", err)
 		return nil, err
 	}
 	log.Println("colssss", cols)
