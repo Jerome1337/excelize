@@ -77,8 +77,9 @@ func (cols *Cols) Rows() ([]string, error) {
 	for i := 1; i <= cols.totalRow; i++ {
 		colName, _ := ColumnNumberToName(cols.curCol)
 		log.Println("coord", fmt.Sprintf("%s%d", colName, i))
-		value, _ := cols.f.GetCellValue(cols.sheet, fmt.Sprintf("%s%d", colName, i))
+		value, err := cols.f.GetCellValue(cols.sheet, fmt.Sprintf("%s%d", colName, i))
 
+		log.Println("err getting value", err)
 		log.Println("valuuuuuue", value)
 
 		rows = append(rows, value)
