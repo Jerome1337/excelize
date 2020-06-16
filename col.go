@@ -86,9 +86,9 @@ func (cols *Cols) Rows() ([]string, error) {
 				colCell := xlsxC{}
 				_ = cols.decoder.DecodeElement(&colCell, &startElement)
 
+				log.Println("colcell", colCell)
+				colName, _ := ColumnNumberToName(cols.curCol)
 				for i := 1; i <= cols.totalRow; i++ {
-					colName, _ := ColumnNumberToName(cols.curCol)
-
 					if colCell.R == fmt.Sprintf("%s%d", colName, i) {
 						cellCol, _, err = CellNameToCoordinates(colCell.R)
 						if err != nil {
