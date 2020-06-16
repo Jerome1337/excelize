@@ -15,6 +15,7 @@ import (
 	"errors"
 	"log"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/mohae/deepcopy"
@@ -29,10 +30,11 @@ const (
 
 // GetCols dededed
 func (f *File) GetCols(sheet string) ([][]string, error) {
-	_, err := f.Cols(sheet)
+	cols, err := f.Cols(sheet)
 	if err != nil {
 		return nil, err
 	}
+	log.Println("colssss", cols)
 	results := make([][]string, 0, 64)
 	// for cols.Next() {
 	// 	if cols.Error() != nil {
@@ -69,9 +71,9 @@ func (f *File) Cols(sheet string) (*Rows, error) {
 		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
 	}
 	var (
-		// err       error
+		err       error
 		inElement string
-		// col       int
+		col       int
 		cols      Rows
 	)
 	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
@@ -83,18 +85,18 @@ func (f *File) Cols(sheet string) (*Rows, error) {
 		switch startElement := token.(type) {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
-			log.Println(inElement)
-			// if inElement == "row" {
-			// 	for _, attr := range startElement.Attr {
-			// 		if attr.Name.Local == "r" {
-			// 			col, err = strconv.Atoi(attr.Value)
-			// 			if err != nil {
-			// 				return &cols, err
-			// 			}
-			// 		}
-			// 	}
-			// 	cols.totalRow = col
-			// }
+			// log.Println(inElement)
+			if inElement == "col" {
+				for _, attr := range startElement.Attr {
+					if attr.Name.Local == "c" {
+						col, err = strconv.Atoi(attr.Value)
+						if err != nil {
+							return &cols, err
+						}
+					}
+				}
+				cols.totalRow = col
+			}
 		default:
 		}
 	}
