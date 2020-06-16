@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"log"
 	"math"
 	"strings"
@@ -36,17 +37,53 @@ func (f *File) GetCols(sheet string) ([][]string, error) {
 	}
 	log.Println("colssss", cols)
 	results := make([][]string, 0, 64)
-	// for cols.Next() {
-	// 	if cols.Error() != nil {
-	// 		break
-	// 	}
-	// 	col, err := cols.Rows()
-	// 	if err != nil {
-	// 		break
-	// 	}
-	// 	results = append(results, col)
-	// }
+	for cols.Next() {
+		if cols.Error() != nil {
+			break
+		}
+		col, err := cols.Rows()
+		if err != nil {
+			break
+		}
+		results = append(results, col)
+	}
 	return results, nil
+}
+
+// Next will return true if find the next col element.
+func (cols *Cols) Next() bool {
+	cols.curCol++
+	return cols.curCol <= cols.totalCol
+}
+
+// Error will return the error when the find next col element
+func (cols *Cols) Error() error {
+	return cols.err
+}
+
+// Rows return the current column's row values
+func (cols *Cols) Rows() ([]string, error) {
+	var (
+		err          error
+		// inElement    string
+		// col, cellRow int
+		rows      []string
+	)
+
+	if cols.stashCol >= cols.curCol {
+		return rows, err
+	}
+
+	for i := 1; i <= cols.totalRow; i++ {
+		colName, _ := ColumnNumberToName(cols.curCol)
+		value, _ := cols.f.GetCellValue(cols.sheet, fmt.Sprintf("%s%d", colName, i))
+
+		log.Println("valuuuuuue", value)
+
+		rows = append(rows, value)
+	}
+
+	return rows, err
 }
 
 // Cols defines an iterator to a sheet
@@ -101,6 +138,7 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 						}
 					}
 				}
+				cols.curCol = colsNum[0]
 				cols.totalCol = colsNum[1] - (colsNum[0] - 1)
 				cols.totalRow = rowsNum[1] - (rowsNum[0] - 1)
 			}
