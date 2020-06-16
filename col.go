@@ -10,7 +10,10 @@
 package excelize
 
 import (
+	"bytes"
+	"encoding/xml"
 	"errors"
+	"log"
 	"math"
 	"strings"
 
@@ -23,6 +26,146 @@ const (
 	defaultRowHeightPixels float64 = 20
 	EMU                    int     = 9525
 )
+
+// GetCols dededed
+func (f *File) GetCols(sheet string) ([][]string, error) {
+	_, err := f.Cols(sheet)
+	if err != nil {
+		return nil, err
+	}
+	results := make([][]string, 0, 64)
+	// for cols.Next() {
+	// 	if cols.Error() != nil {
+	// 		break
+	// 	}
+	// 	col, err := cols.Rows()
+	// 	if err != nil {
+	// 		break
+	// 	}
+	// 	results = append(results, col)
+	// }
+	return results, nil
+}
+
+// Cols defines an iterator to a sheet
+type Cols struct {
+	err                        error
+	curCol, totalCol, stashCol int
+	sheet                      string
+	cols                       []xlsxCols
+	f                          *File
+	decoder                    *xml.Decoder
+}
+
+// Cols deded
+func (f *File) Cols(sheet string) (*Rows, error) {
+	name, ok := f.sheetMap[trimSheetName(sheet)]
+	if !ok {
+		return nil, ErrSheetNotExist{sheet}
+	}
+	if f.Sheet[name] != nil {
+		// flush data
+		output, _ := xml.Marshal(f.Sheet[name])
+		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
+	}
+	var (
+		// err       error
+		inElement string
+		// col       int
+		cols      Rows
+	)
+	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch startElement := token.(type) {
+		case xml.StartElement:
+			inElement = startElement.Name.Local
+			log.Println(inElement)
+			// if inElement == "row" {
+			// 	for _, attr := range startElement.Attr {
+			// 		if attr.Name.Local == "r" {
+			// 			col, err = strconv.Atoi(attr.Value)
+			// 			if err != nil {
+			// 				return &cols, err
+			// 			}
+			// 		}
+			// 	}
+			// 	cols.totalRow = col
+			// }
+		default:
+		}
+	}
+	cols.f = f
+	cols.sheet = name
+	cols.decoder = f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
+	return &cols, nil
+}
+
+// Columns return the current column's row values
+func (cols *Rows) Rows() ([]string, error) {
+	// var (
+	// 	err          error
+	// 	inElement    string
+	// 	row, cellCol int
+	// 	columns      []string
+	// )
+
+	// if rows.stashCol >= rows.curCol {
+	// 	return columns, err
+	// }
+
+	// d := rows.f.sharedStringsReader()
+	// for {
+	// 	token, _ := rows.decoder.Token()
+	// 	if token == nil {
+	// 		break
+	// 	}
+	// 	switch startElement := token.(type) {
+	// 	case xml.StartElement:
+	// 		inElement = startElement.Name.Local
+	// 		if inElement == "row" {
+	// 			for _, attr := range startElement.Attr {
+	// 				if attr.Name.Local == "r" {
+	// 					row, err = strconv.Atoi(attr.Value)
+	// 					if err != nil {
+	// 						return columns, err
+	// 					}
+	// 					if row > rows.curCol {
+	// 						rows.stashCol = row - 1
+	// 						return columns, err
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 		if inElement == "c" {
+	// 			colCell := xlsxC{}
+	// 			_ = rows.decoder.DecodeElement(&colCell, &startElement)
+	// 			cellCol, _, err = CellNameToCoordinates(colCell.R)
+	// 			if err != nil {
+	// 				return columns, err
+	// 			}
+	// 			blank := cellCol - len(columns)
+	// 			for i := 1; i < blank; i++ {
+	// 				columns = append(columns, "")
+	// 			}
+	// 			val, _ := colCell.getValueFrom(rows.f, d)
+	// 			columns = append(columns, val)
+	// 		}
+	// 	case xml.EndElement:
+	// 		inElement = startElement.Name.Local
+	// 		if inElement == "row" {
+	// 			return columns, err
+	// 		}
+	// 	}
+	// }
+	// return columns, err
+
+	return make([]string, 0), nil
+}
+
 
 // GetColVisible provides a function to get visible of a single column by given
 // worksheet name and column name. For example, get visible state of column D
