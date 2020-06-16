@@ -141,7 +141,6 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 						}
 					}
 				}
-				cols.curCol = colsNum[0]
 				cols.totalCol = colsNum[1] - (colsNum[0] - 1)
 				cols.totalRow = rowsNum[1] - (rowsNum[0] - 1)
 			}
