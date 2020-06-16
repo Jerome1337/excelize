@@ -98,7 +98,7 @@ func (cols *Cols) Rows() ([]string, error) {
 						for i := 1; i < blank; i++ {
 							rows = append(rows, "")
 						}
-						val, _ := colCell.getValueFrom(rows.f, d)
+						val, _ := colCell.getValueFrom(cols.f, d)
 						log.Println("err getting value", err)
 						log.Println("valuuuuuue", val)
 						rows = append(rows, val)
