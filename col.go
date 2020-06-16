@@ -77,8 +77,7 @@ func (cols *Cols) Rows() ([]string, error) {
 
 	d := cols.f.sharedStringsReader()
 	for {
-		log.Println("LOOP1", cols)
-		log.Println("LOOP", cols.decoder)
+		log.Println("LOOP", cols.err)
 		token, _ := cols.decoder.Token()
 		if token == nil {
 			log.Println("BREAK ")
