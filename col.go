@@ -66,7 +66,7 @@ func (cols *Cols) Rows() ([]string, error) {
 	var (
 		err          error
 		// inElement    string
-		// col, cellRow int
+		cellCol int
 		rows      []string
 	)
 
@@ -74,22 +74,22 @@ func (cols *Cols) Rows() ([]string, error) {
 		return rows, err
 	}
 
-	d := rows.f.sharedStringsReader()
+	d := cols.f.sharedStringsReader()
 	for {
-		token, _ := rows.decoder.Token()
+		token, _ := cols.decoder.Token()
 		if token == nil {
 			break
 		}
 		switch startElement := token.(type) {
 		case xml.StartElement:
-			if inElement == "c" {
+			if startElement.Name.Local == "c" {
 				colCell := xlsxC{}
-				_ = rows.decoder.DecodeElement(&colCell, &startElement)
+				_ = cols.decoder.DecodeElement(&colCell, &startElement)
 
 				for i := 1; i <= cols.totalRow; i++ {
 					colName, _ := ColumnNumberToName(cols.curCol)
 
-					if colCell == fmt.Sprintf("%s%d", colName, i) {
+					if colCell.R == fmt.Sprintf("%s%d", colName, i) {
 						cellCol, _, err = CellNameToCoordinates(colCell.R)
 						if err != nil {
 							return rows, err
@@ -105,6 +105,7 @@ func (cols *Cols) Rows() ([]string, error) {
 					}
 				}
 			}
+		}
 	}
 
 	log.Println("NEXT COL")
