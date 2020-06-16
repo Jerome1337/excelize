@@ -76,12 +76,15 @@ func (cols *Cols) Rows() ([]string, error) {
 
 	for i := 1; i <= cols.totalRow; i++ {
 		colName, _ := ColumnNumberToName(cols.curCol)
+		log.Println("coord", fmt.Sprintf("%s%d", colName, i))
 		value, _ := cols.f.GetCellValue(cols.sheet, fmt.Sprintf("%s%d", colName, i))
 
 		log.Println("valuuuuuue", value)
 
 		rows = append(rows, value)
 	}
+
+	log.Println("NEXT COL")
 
 	return rows, err
 }
@@ -149,68 +152,6 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 	cols.sheet = name
 	cols.decoder = f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	return &cols, nil
-}
-
-// Columns return the current column's row values
-func (cols *Rows) Rows() ([]string, error) {
-	// var (
-	// 	err          error
-	// 	inElement    string
-	// 	row, cellCol int
-	// 	columns      []string
-	// )
-
-	// if rows.stashCol >= rows.curCol {
-	// 	return columns, err
-	// }
-
-	// d := rows.f.sharedStringsReader()
-	// for {
-	// 	token, _ := rows.decoder.Token()
-	// 	if token == nil {
-	// 		break
-	// 	}
-	// 	switch startElement := token.(type) {
-	// 	case xml.StartElement:
-	// 		inElement = startElement.Name.Local
-	// 		if inElement == "row" {
-	// 			for _, attr := range startElement.Attr {
-	// 				if attr.Name.Local == "r" {
-	// 					row, err = strconv.Atoi(attr.Value)
-	// 					if err != nil {
-	// 						return columns, err
-	// 					}
-	// 					if row > rows.curCol {
-	// 						rows.stashCol = row - 1
-	// 						return columns, err
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 		if inElement == "c" {
-	// 			colCell := xlsxC{}
-	// 			_ = rows.decoder.DecodeElement(&colCell, &startElement)
-	// 			cellCol, _, err = CellNameToCoordinates(colCell.R)
-	// 			if err != nil {
-	// 				return columns, err
-	// 			}
-	// 			blank := cellCol - len(columns)
-	// 			for i := 1; i < blank; i++ {
-	// 				columns = append(columns, "")
-	// 			}
-	// 			val, _ := colCell.getValueFrom(rows.f, d)
-	// 			columns = append(columns, val)
-	// 		}
-	// 	case xml.EndElement:
-	// 		inElement = startElement.Name.Local
-	// 		if inElement == "row" {
-	// 			return columns, err
-	// 		}
-	// 	}
-	// }
-	// return columns, err
-
-	return make([]string, 0), nil
 }
 
 
