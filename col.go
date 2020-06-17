@@ -14,7 +14,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"strings"
 
@@ -28,36 +27,66 @@ const (
 	EMU                    int     = 9525
 )
 
-// GetCols dededed
+// Cols defines an iterator to a sheet
+type Cols struct {
+	err                                  error
+	curCol, totalCol, stashCol, totalRow int
+	sheet                                string
+	cols                                 []xlsxCols
+	f                                    *File
+	decoder                              *xml.Decoder
+}
+
+// GetCols return all the columns in a sheet by given worksheet name (case sensitive). For example:
+//
+//    cols, err := f.Cols("Sheet1")
+//    if err != nil {
+//        fmt.Println(err)
+//        return
+//    }
+//    for cols.Next() {
+//        col, err := cols.Rows()
+//        if err != nil {
+//            fmt.Println(err)
+//        }
+//        for _, rowCell := range col {
+//            fmt.Print(rowCell, "\t")
+//        }
+//        fmt.Println()
+//    }
+//
 func (f *File) GetCols(sheet string) ([][]string, error) {
 	cols, err := f.Cols(sheet)
 	if err != nil {
-		log.Println("fck error", err)
 		return nil, err
 	}
-	log.Println("colssss", cols)
+
 	results := make([][]string, 0, 64)
+
 	for cols.Next() {
 		if cols.Error() != nil {
 			break
 		}
+
 		col, err := cols.Rows()
 		if err != nil {
 			break
 		}
+
 		results = append(results, col)
 	}
+
 	return results, nil
 }
 
-// Next will return true if find the next col element.
+// Next will return true if the next col element is found.
 func (cols *Cols) Next() bool {
 	cols.curCol++
-	log.Println("next", cols.curCol)
+
 	return cols.curCol <= cols.totalCol
 }
 
-// Error will return the error when the find next col element
+// Error will return an error when the next col element is found.
 func (cols *Cols) Error() error {
 	return cols.err
 }
@@ -65,9 +94,8 @@ func (cols *Cols) Error() error {
 // Rows return the current column's row values
 func (cols *Cols) Rows() ([]string, error) {
 	var (
-		err          error
-		// inElement    string
-		rows      []string
+		err  error
+		rows []string
 	)
 
 	if cols.stashCol >= cols.curCol {
@@ -77,50 +105,54 @@ func (cols *Cols) Rows() ([]string, error) {
 	for i := 1; i <= cols.totalRow; i++ {
 		colName, _ := ColumnNumberToName(cols.curCol)
 		val, _ := cols.f.GetCellValue(cols.sheet, fmt.Sprintf("%s%d", colName, i))
-		log.Println("err getting value", err)
-		log.Println("valuuuuuue", val)
 		rows = append(rows, val)
 	}
 
-	log.Println("NEXT COL")
-
-	return rows, err
+	return rows, nil
 }
 
-// Cols defines an iterator to a sheet
-type Cols struct {
-	err                        error
-	curCol, totalCol, stashCol, totalRow int
-	sheet                      string
-	cols                       []xlsxCols
-	f                          *File
-	decoder                    *xml.Decoder
-}
-
-// Cols deded
+// Cols returns a columns iterator, used for streaming/reading data for a worksheet with a large data. For example:
+//
+//    cols, err := f.Cols("Sheet1")
+//    if err != nil {
+//        fmt.Println(err)
+//        return
+//    }
+//    for cols.Next() {
+//        col, err := cols.Rows()
+//        if err != nil {
+//            fmt.Println(err)
+//        }
+//        for _, rowCell := range col {
+//            fmt.Print(rowCell, "\t")
+//        }
+//        fmt.Println()
+//    }
+//
 func (f *File) Cols(sheet string) (*Cols, error) {
-	log.Println("sheets", f.sheetMap[trimSheetName(sheet)])
 	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
+
 	if f.Sheet[name] != nil {
-		// flush data
 		output, _ := xml.Marshal(f.Sheet[name])
 		f.saveFileList(name, replaceRelationshipsNameSpaceBytes(output))
 	}
+
 	var (
-		inElement string
-		cols      Cols
-		colsNum  []int
-		rowsNum []int
+		inElement        string
+		cols             Cols
+		colsNum, rowsNum []int
 	)
 	decoder := f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
+
 	for {
 		token, _ := decoder.Token()
 		if token == nil {
 			break
 		}
+
 		switch startElement := token.(type) {
 		case xml.StartElement:
 			inElement = startElement.Name.Local
@@ -130,28 +162,34 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 
 				for _, attr := range startElement.Attr {
 					if attr.Name.Local == "ref" {
-						coordinates := strings.Split(attr.Value, ":")
+						sheetCoordinates := attr.Value
+						if i := strings.Index(sheetCoordinates, ":"); i <= -1 {
+							return &cols, errors.New("Sheet coordinates are wrong")
+						}
+
+						coordinates := strings.Split(sheetCoordinates, ":")
 						for _, coordinate := range coordinates {
 							c, r, _ := SplitCellName(coordinate)
 							columnNum, _ := ColumnNameToNumber(c)
-
 							colsNum = append(colsNum, columnNum)
 							rowsNum = append(rowsNum, r)
 						}
 					}
 				}
+
 				cols.totalCol = colsNum[1] - (colsNum[0] - 1)
 				cols.totalRow = rowsNum[1] - (rowsNum[0] - 1)
 			}
 		default:
 		}
 	}
+
 	cols.f = f
 	cols.sheet = trimSheetName(sheet)
 	cols.decoder = f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
+
 	return &cols, nil
 }
-
 
 // GetColVisible provides a function to get visible of a single column by given
 // worksheet name and column name. For example, get visible state of column D
