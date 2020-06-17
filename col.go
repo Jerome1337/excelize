@@ -101,10 +101,8 @@ type Cols struct {
 
 // Cols deded
 func (f *File) Cols(sheet string) (*Cols, error) {
-	log.Println()
-	name := trimSheetName(sheet)
-	log.Println("sheets", f.sheetMap[name])
-	_, ok := f.sheetMap[name]
+	log.Println("sheets", f.sheetMap[trimSheetName(sheet)])
+	name, ok := f.sheetMap[trimSheetName(sheet)]
 	if !ok {
 		return nil, ErrSheetNotExist{sheet}
 	}
@@ -151,7 +149,7 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 		}
 	}
 	cols.f = f
-	cols.sheet = name
+	cols.sheet = trimSheetName(sheet)
 	cols.decoder = f.xmlNewDecoder(bytes.NewReader(f.readXML(name)))
 	return &cols, nil
 }
