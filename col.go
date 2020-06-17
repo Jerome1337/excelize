@@ -80,8 +80,6 @@ func (cols *Cols) Rows() ([]string, error) {
 		log.Println("err getting value", err)
 		log.Println("valuuuuuue", val)
 		rows = append(rows, val)
-
-		break;
 	}
 
 	log.Println("NEXT COL")
